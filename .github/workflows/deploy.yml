@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: sharing-aca-deployment
@@ -76,38 +77,33 @@ jobs:
       - name: Require explicit deployment configuration
         shell: bash
         env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           set -euo pipefail
-          for name in AZURE_CREDENTIALS AZURE_RESOURCE_GROUP AZURE_CONTAINER_APP AZURE_ACR_NAME; do
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_CONTAINER_APP AZURE_ACR_NAME; do
             if [[ -z "${!name}" ]]; then
               echo "::error::Missing $name in the sharing-aca GitHub environment."
               exit 1
             fi
           done
           python3 - <<'PY'
-          import json
           import os
           import uuid
 
-          try:
-              credentials = json.loads(os.environ["AZURE_CREDENTIALS"])
-          except json.JSONDecodeError:
-              raise SystemExit("::error::AZURE_CREDENTIALS must be a valid JSON object.")
-          if not isinstance(credentials, dict):
-              raise SystemExit("::error::AZURE_CREDENTIALS must be a JSON object.")
-          for field in ("clientId", "clientSecret", "tenantId", "subscriptionId"):
-              if not isinstance(credentials.get(field), str) or not credentials[field].strip():
-                  raise SystemExit(f"::error::AZURE_CREDENTIALS requires a non-empty {field}.")
-          for field in ("clientId", "tenantId", "subscriptionId"):
+          for field in ("AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID"):
               try:
-                  uuid.UUID(credentials[field])
+                  uuid.UUID(os.environ[field])
               except ValueError:
-                  raise SystemExit(f"::error::AZURE_CREDENTIALS {field} must be a GUID.")
+                  raise SystemExit(f"::error::{field} must be a GUID.")
           PY
       - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          audience: api://AzureADTokenExchange
       - name: Verify and connect the pre-provisioned demo target
         shell: bash
         run: |

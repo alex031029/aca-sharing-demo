@@ -180,7 +180,7 @@ docker run --rm -p 8080:8080 \
 
 # ASP.NET Core 10
 # non-root / port 8080</code></pre></article>
-        <article class="step-card"><span class="step-label">STEP 03 · ACA</span><h3>手动触发 deploy.yml</h3><p>GitHub Actions 使用专用部署身份登录，再发布新镜像。</p><pre><code>tests → build → push → deploy
+        <article class="step-card"><span class="step-label">STEP 03 · ACA</span><h3>手动触发 deploy.yml</h3><p>GitHub Actions 通过 UAMI + OIDC 登录，再发布新镜像。</p><pre><code>tests → build → push → deploy
 
 image: commit + run ID
 version: v1 / v2

@@ -78,6 +78,8 @@ GitHub 工作流会执行 Linux 镜像构建和容器 smoke check。
 工作流在仓库根目录 `.github\workflows\deploy.yml`，只接受手动触发。
 它先检查 .NET、浏览器和 Linux 容器，再构建不可变镜像，部署并验证公网返回值。
 只有 `main` 分支可以执行部署 job。工作流不会创建基础资源或隐式增加 Azure 权限。
+当前使用 `azure/login@v3` 的服务主体凭据认证，读取 `AZURE_CREDENTIALS`；
+不依赖开发者本机的 `az login` 会话，也不需要配置 OIDC federated credential。
 
 ### 首次使用前的准备
 
@@ -86,36 +88,25 @@ GitHub 工作流会执行 Linux 镜像构建和容器 smoke check。
 
 1. 专用资源组、Azure Container Registry、ACA 环境和单容器 Container App。
 2. Container App 使用 external ingress、target port `8080`、`Single` revision 模式。
-3. Container App 配置从上述 ACR 拉取镜像的托管身份；身份具有 ACR 的 `AcrPull`
-   权限。使用启用了 ABAC 的 ACR 时，改用适用的 repository reader 角色。
+3. Container App 开启 **System assigned identity**，为这个身份授予上述 ACR 的 `AcrPull`
+   权限。工作流会自动配置 ACR 连接，使用该系统分配身份拉取镜像。
+   使用启用了 ABAC 的 ACR 时，改用适用的 repository reader 角色。
 4. GitHub 部署身份能更新该 app，并能推送到 ACR（传统 RBAC 模式为 `AcrPush`；
    ABAC 模式使用适用的 repository writer 角色）。还需要 ACR 管理面读取权限
    `Microsoft.ContainerRegistry/registries/read`，例如在 ACR 范围授予 `Reader`；
    如果已从资源组继承则无需重复授予。`AcrPush` 本身不包含此读取权限。
    不需要开启 ACR admin 密码。
-5. 在部署身份上创建 GitHub OIDC federated credential：
-   issuer 为 `https://token.actions.githubusercontent.com`，
-   audience 为 `api://AzureADTokenExchange`，
-   subject 必须与仓库实际签发的值完全匹配。2026 年 7 月 15 日之后的新仓库
-   默认包含不可变的 owner ID 和 repository ID，不能照搬旧的纯名称格式。
-   先创建仓库，再从真实 GitHub 元数据生成本仓库的 subject：
-
-   ```powershell
-   $repo = gh api repos/alex031029/aca-sharing-demo | ConvertFrom-Json
-   $subject = "repo:$($repo.owner.login)@$($repo.owner.id)/$($repo.name)@$($repo.id):environment:sharing-aca"
-   $subject
-   ```
-
-   Fork 到其他仓库时，使用该仓库的实际 owner、name、ID 和 environment。
-   旧仓库或自定义 OIDC claim 配置应以实际 `sub` 为准，不要输出完整身份令牌到日志。
+5. 在目标 Microsoft Entra 目录中创建专用 App registration（单租户），记录
+   Application (client) ID 和 Directory (tenant) ID，并创建一个符合组织要求的
+   client secret。复制的是 secret 的 **Value**，不是 Secret ID。
+   通过资源组的 IAM 为该服务主体分配部署所需权限；独立演示资源组可使用仅限该组的
+   `Contributor`，不要扩大到整个订阅。不要复用其他应用的生产凭据。
 
 在 GitHub 创建名为 `sharing-aca` 的 Environment，并配置：
 
 | 类型 | 名称 | 值 |
 | --- | --- | --- |
-| Secret | `AZURE_CLIENT_ID` | 部署身份 client ID |
-| Secret | `AZURE_TENANT_ID` | 所选订阅所属 tenant ID |
-| Secret | `AZURE_SUBSCRIPTION_ID` | 明确选择的订阅 ID |
+| Secret | `AZURE_CREDENTIALS` | 下方 JSON，保存在 Environment secrets 中 |
 | Variable | `AZURE_RESOURCE_GROUP` | 专用 demo 资源组 |
 | Variable | `AZURE_CONTAINER_APP` | 已有 Container App 名称 |
 | Variable | `AZURE_ACR_NAME` | ACR 资源名称，不是带域名的 login server |
@@ -123,9 +114,24 @@ GitHub 工作流会执行 Linux 镜像构建和容器 smoke check。
 将该 Environment 的允许部署分支限制为 `main`。不要把 Azure 凭据、租户或订阅配置
 写进公开源码；示例通过 Environment secrets / variables 接收部署配置。
 
+`AZURE_CREDENTIALS` 的结构如下。用实际值替换示例后，**只粘贴到 GitHub Secret 编辑框**：
+
+```json
+{
+  "clientId": "<application-client-id>",
+  "clientSecret": "<client-secret-value>",
+  "tenantId": "<directory-tenant-id>",
+  "subscriptionId": "<target-subscription-id>"
+}
+```
+
+不要把真实 JSON 提交到仓库、贴到 issue 或打印到日志。轮换或过期后，更新这个 Secret。
+工作流只校验字段，不打印凭据内容。Azure Login 不再同时设置 OIDC 的三个独立 ID 输入。
+GitHub 部署身份负责推镜像和更新应用；ACA 自己的托管身份只负责拉镜像，两者不是同一身份。
+
 在 Actions 中选择 **Deploy Sharing to ACA → Run workflow**，选择 `v1` 或 `v2`。
 需要先将工作流提交并推送到 GitHub；首次手动触发通常需要该文件已存在于默认分支。
-Fork 到其他账号时，需要修改 OIDC subject 并配置自己的环境，不能复用原仓库的信任关系。
+Fork 到其他账号时，需要配置自己的 Azure 部署身份和 GitHub Environment，凭据不会自动复制。
 
 镜像标签包含 commit SHA、run ID 和 attempt；revision suffix 包含 run ID 和 attempt。
 v1/v2 是 API 展示的配置标签，不代表镜像内容必然不同。工作流验证**实际公网响应**
@@ -164,6 +170,6 @@ multiple revision 模式下每个 revision 独立扩缩容。云平台并不让�
 - [ACA 内置运行环境变量](https://learn.microsoft.com/azure/container-apps/environment-variables)
 - [ACA revisions](https://learn.microsoft.com/azure/container-apps/revisions)
 - [ACA 托管身份拉取镜像](https://learn.microsoft.com/azure/container-apps/managed-identity-image-pull)
-- [Azure Login / OIDC](https://github.com/Azure/login)
-- [GitHub OIDC 不可变 subject](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)
+- [Azure Login](https://github.com/Azure/login)
+- [通过 Portal 创建部署服务主体](https://learn.microsoft.com/entra/identity-platform/howto-create-service-principal-portal)
 - [ACR RBAC 与 ABAC 角色](https://learn.microsoft.com/azure/container-registry/container-registry-rbac-built-in-roles-overview)

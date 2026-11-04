@@ -63,7 +63,6 @@ jobs:
     environment: sharing-aca
     permissions:
       contents: read
-      id-token: write
     env:
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       AZURE_CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP }}
@@ -77,35 +76,63 @@ jobs:
       - name: Require explicit deployment configuration
         shell: bash
         env:
-          CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           set -euo pipefail
-          for name in CLIENT_ID TENANT_ID SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_CONTAINER_APP AZURE_ACR_NAME; do
+          for name in AZURE_CREDENTIALS AZURE_RESOURCE_GROUP AZURE_CONTAINER_APP AZURE_ACR_NAME; do
             if [[ -z "${!name}" ]]; then
               echo "::error::Missing $name in the sharing-aca GitHub environment."
               exit 1
             fi
           done
+          python3 - <<'PY'
+          import json
+          import os
+          import uuid
+
+          try:
+              credentials = json.loads(os.environ["AZURE_CREDENTIALS"])
+          except json.JSONDecodeError:
+              raise SystemExit("::error::AZURE_CREDENTIALS must be a valid JSON object.")
+          if not isinstance(credentials, dict):
+              raise SystemExit("::error::AZURE_CREDENTIALS must be a JSON object.")
+          for field in ("clientId", "clientSecret", "tenantId", "subscriptionId"):
+              if not isinstance(credentials.get(field), str) or not credentials[field].strip():
+                  raise SystemExit(f"::error::AZURE_CREDENTIALS requires a non-empty {field}.")
+          for field in ("clientId", "tenantId", "subscriptionId"):
+              try:
+                  uuid.UUID(credentials[field])
+              except ValueError:
+                  raise SystemExit(f"::error::AZURE_CREDENTIALS {field} must be a GUID.")
+          PY
       - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Verify the pre-provisioned demo target
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Verify and connect the pre-provisioned demo target
         shell: bash
         run: |
           set -euo pipefail
           az containerapp show --name "$AZURE_CONTAINER_APP" --resource-group "$AZURE_RESOURCE_GROUP" \
             --output json > "$RUNNER_TEMP/sharing-app.json"
-          jq -e '.properties.configuration.activeRevisionsMode == "Single" and
-                 .properties.configuration.ingress.external == true and
-                 .properties.configuration.ingress.targetPort == 8080' \
-            "$RUNNER_TEMP/sharing-app.json"
+          if ! jq -e '.properties.configuration.activeRevisionsMode == "Single" and
+                      .properties.configuration.ingress.external == true and
+                      .properties.configuration.ingress.targetPort == 8080' \
+              "$RUNNER_TEMP/sharing-app.json" > /dev/null; then
+            echo "::error::The target must use Single revision mode and external ingress on port 8080."
+            exit 1
+          fi
+          if ! jq -e '(.identity.type // "") | contains("SystemAssigned")' \
+              "$RUNNER_TEMP/sharing-app.json" > /dev/null; then
+            echo "::error::Enable the Container App system-assigned identity and grant it AcrPull on the registry first."
+            exit 1
+          fi
           registry=$(az acr show --name "$AZURE_ACR_NAME" --query loginServer --output tsv)
+          az containerapp registry set --name "$AZURE_CONTAINER_APP" \
+            --resource-group "$AZURE_RESOURCE_GROUP" --server "$registry" --identity system
+          az containerapp show --name "$AZURE_CONTAINER_APP" --resource-group "$AZURE_RESOURCE_GROUP" \
+            --output json > "$RUNNER_TEMP/sharing-app.json"
           jq -e --arg server "$registry" \
-            '.properties.configuration.registries[] | select(.server == $server and .identity != null)' \
+            'any(.properties.configuration.registries[]?; .server == $server and .identity == "system")' \
             "$RUNNER_TEMP/sharing-app.json"
           echo "REGISTRY_SERVER=$registry" >> "$GITHUB_ENV"
       - name: Build and push an immutable image

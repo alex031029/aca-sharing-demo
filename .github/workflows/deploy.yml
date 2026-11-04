@@ -1,0 +1,150 @@
+name: Deploy Sharing to ACA
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_version:
+        description: Version label shown by the real runtime API
+        required: true
+        type: choice
+        options:
+          - v1
+          - v2
+        default: v1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sharing-aca-deployment
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: ASP.NET Core integration tests
+        run: dotnet test Sharing.sln --configuration Release
+      - name: Browser checks
+        working-directory: aca-presentation
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium --only-shell
+          npm run check
+      - name: Build the Linux container
+        run: docker build --pull --tag sharing-presentation:check aca-presentation
+      - name: Smoke test the container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --name sharing-check -p 127.0.0.1:8080:8080 \
+            -e APP_VERSION=v1 sharing-presentation:check
+          trap 'docker logs sharing-check; docker rm --force sharing-check' EXIT
+          curl --fail --retry 15 --retry-delay 2 --retry-connrefused \
+            --max-time 5 http://127.0.0.1:8080/api/info | \
+            jq -e '.version == "v1" and .environment == "local"'
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: sharing-aca
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP }}
+      AZURE_ACR_NAME: ${{ vars.AZURE_ACR_NAME }}
+      APP_VERSION: ${{ inputs.app_version }}
+      AZURE_CORE_OUTPUT: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Require explicit deployment configuration
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          for name in CLIENT_ID TENANT_ID SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_CONTAINER_APP AZURE_ACR_NAME; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing $name in the sharing-aca GitHub environment."
+              exit 1
+            fi
+          done
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify the pre-provisioned demo target
+        shell: bash
+        run: |
+          set -euo pipefail
+          az containerapp show --name "$AZURE_CONTAINER_APP" --resource-group "$AZURE_RESOURCE_GROUP" \
+            --output json > "$RUNNER_TEMP/sharing-app.json"
+          jq -e '.properties.configuration.activeRevisionsMode == "Single" and
+                 .properties.configuration.ingress.external == true and
+                 .properties.configuration.ingress.targetPort == 8080' \
+            "$RUNNER_TEMP/sharing-app.json"
+          registry=$(az acr show --name "$AZURE_ACR_NAME" --query loginServer --output tsv)
+          jq -e --arg server "$registry" \
+            '.properties.configuration.registries[] | select(.server == $server and .identity != null)' \
+            "$RUNNER_TEMP/sharing-app.json"
+          echo "REGISTRY_SERVER=$registry" >> "$GITHUB_ENV"
+      - name: Build and push an immutable image
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="$REGISTRY_SERVER/sharing-presentation:$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          az acr login --name "$AZURE_ACR_NAME"
+          docker build --pull --tag "$image" aca-presentation
+          docker push "$image"
+          echo "DEPLOY_IMAGE=$image" >> "$GITHUB_ENV"
+      - name: Deploy a new revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          suffix="r$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          az containerapp update --name "$AZURE_CONTAINER_APP" --resource-group "$AZURE_RESOURCE_GROUP" \
+            --image "$DEPLOY_IMAGE" --set-env-vars "APP_VERSION=$APP_VERSION" \
+            --revision-suffix "$suffix" --cpu 0.25 --memory 0.5Gi --min-replicas 1 --max-replicas 2
+          echo "EXPECTED_REVISION=$AZURE_CONTAINER_APP--$suffix" >> "$GITHUB_ENV"
+      - name: Verify the publicly served version
+        shell: bash
+        run: |
+          set -euo pipefail
+          fqdn=$(az containerapp show --name "$AZURE_CONTAINER_APP" --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query properties.configuration.ingress.fqdn --output tsv)
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error --max-time 10 "https://$fqdn/api/info" \
+                --output "$RUNNER_TEMP/runtime.json" &&
+              jq -e --arg version "$APP_VERSION" --arg revision "$EXPECTED_REVISION" \
+                '.version == $version and .revision == $revision and .environment == "azure-container-apps"' \
+                "$RUNNER_TEMP/runtime.json"; then
+              echo "### Sharing is live" >> "$GITHUB_STEP_SUMMARY"
+              echo "https://$fqdn" >> "$GITHUB_STEP_SUMMARY"
+              echo "Version: $APP_VERSION; revision: $EXPECTED_REVISION" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Waiting for the requested revision ($attempt/30)."
+            sleep 5
+          done
+          echo "::error::The public endpoint did not serve the requested revision."
+          exit 1

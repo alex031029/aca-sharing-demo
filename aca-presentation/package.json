@@ -1,0 +1,17 @@
+{
+  "name": "aca-presentation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests for the ASP.NET Core ACA presentation. Not a runtime dependency.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test:browser": "playwright test",
+    "check": "node --check wwwroot/app.js && npm run test:browser"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

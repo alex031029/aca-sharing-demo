@@ -1,0 +1,7 @@
+**
+!Dockerfile
+!Sharing.Presentation.csproj
+!Program.cs
+!appsettings.json
+!wwwroot/
+!wwwroot/**

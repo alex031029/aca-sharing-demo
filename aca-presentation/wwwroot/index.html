@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123f36">
+  <title>不在 localhost · Sharing</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+  <script src="./cloud-lab.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#intro"><span class="brand-icon">{ }</span> SHARING<span class="brand-divider">/</span><span class="brand-topic">CODE TO CLOUD</span></a>
+    <div class="top-actions">
+      <span class="top-date">05 NOV 2026</span>
+      <a class="quiet-button" href="https://github.com/alex031029/aca-sharing-demo" target="_blank" rel="noopener noreferrer">源码 <span aria-hidden="true">↗</span></a>
+      <button class="quiet-button" id="copy-link" type="button">复制讲义链接 <span aria-hidden="true">↗</span></button>
+    </div>
+  </header>
+
+  <main id="deck">
+    <section class="slide hero" id="intro" aria-labelledby="intro-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="tiny-line"></span> A PRESENTATION THAT IS ALSO AN APP</p>
+        <h1 id="intro-title">这份 Presentation<br><span>不在 <span class="mono">localhost</span></span><span class="title-dot">.</span></h1>
+        <p class="lead">从一个本地 Demo，<br>到一个大家都能打开的云应用。</p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#runtime">先看看它跑在哪里 <span aria-hidden="true">→</span></a>
+          <span class="caption">不是截图。不是录屏。是真实请求。</span>
+        </div>
+        <div class="tags"><span>ASP.NET Core</span><span>Azure Container Apps</span><span>GitHub Actions</span></div>
+      </div>
+      <aside class="hero-terminal" aria-label="应用结构">
+        <div class="terminal-top"><span class="terminal-dots">● ● ●</span><span>presentation / running</span></div>
+        <div class="terminal-body">
+          <p class="terminal-comment">// 今天的讲义，就是今天的 demo</p>
+          <div class="terminal-path"><span>01</span> 你打开的网页</div>
+          <div class="terminal-connector">│</div>
+          <div class="terminal-path"><span>02</span> 一个真正的 HTTP 请求</div>
+          <div class="terminal-connector">│</div>
+          <div class="terminal-path highlight"><span>03</span> 一段正在运行的 .NET 代码</div>
+          <div class="terminal-separator"></div>
+          <p class="terminal-label">YOU ARE HERE</p>
+          <code id="current-address">等待浏览器地址</code>
+          <p class="terminal-note" id="address-note">地址以你当前打开的页面为准。</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="slide" id="runtime" aria-labelledby="runtime-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">01 / MEET THE RUNTIME</p><h2 id="runtime-title">这个请求，<span>是谁处理的？</span></h2></div>
+        <p class="section-aside">点击一次，请求一次。<br>没有自动轮询，也没有模拟数据。</p>
+      </div>
+      <div class="runtime-layout">
+        <article class="runtime-card">
+          <div class="card-heading">
+            <span class="card-label">LIVE RUNTIME CARD</span>
+            <span class="status-pill" id="runtime-status" data-testid="runtime-status" role="status">尚未请求</span>
+          </div>
+          <div class="runtime-summary">
+            <div><span class="field-label">APP VERSION</span><strong class="version-value" data-testid="version" data-field="version">—</strong></div>
+            <div><span class="field-label">HOSTING</span><strong class="hosting-value" data-testid="environment" data-field="environment">—</strong></div>
+            <div><span class="field-label">BROWSER ROUND TRIP</span><strong class="latency-value" id="latency">—</strong></div>
+          </div>
+          <dl class="runtime-fields">
+            <div><dt>Application</dt><dd data-field="appName">—</dd></div>
+            <div><dt>Revision</dt><dd data-field="revision">—</dd></div>
+            <div><dt>Replica</dt><dd data-field="replica">—</dd></div>
+            <div><dt>Host name</dt><dd data-field="hostname">—</dd></div>
+            <div><dt>Server time · UTC</dt><dd data-field="serverTime">—</dd></div>
+            <div><dt>Service uptime</dt><dd data-field="uptimeSeconds">—</dd></div>
+            <div><dt>Request ID</dt><dd data-field="requestId" data-testid="request-id">—</dd></div>
+          </dl>
+          <div class="card-bottom">
+            <span id="snapshot-label">等待首次请求</span>
+            <button class="primary-button" data-request type="button">发送真实请求</button>
+          </div>
+          <p class="error-message" id="request-error" role="alert" hidden></p>
+          <p class="version-banner" id="version-change" role="status" hidden></p>
+        </article>
+        <aside class="explanation-stack">
+          <div class="note-card"><span class="note-number">01</span><h3>不是写在 HTML 里的值</h3><p>页面向 <code>/api/info</code> 发起请求，后端读取自己的运行环境并返回 JSON。</p></div>
+          <div class="note-card"><span class="note-number">02</span><h3>本地就是本地</h3><p>在电脑上运行时，显示 Local。只有 ACA 实际注入的 revision 和 replica 才会被显示。</p></div>
+          <div class="note-card"><span class="note-number">03</span><h3>耗时，不等于处理时间</h3><p>这里计量的是浏览器请求往返耗时，包含网络等开销，不是服务端 CPU 时间。</p></div>
+        </aside>
+      </div>
+      <details class="request-details">
+        <summary>打开请求记录和原始 JSON</summary>
+        <div class="table-wrap"><table id="request-history"><thead><tr><th>Time</th><th>Version</th><th>Round trip</th><th>Request ID</th></tr></thead><tbody></tbody></table></div>
+        <pre id="raw-response">还没有响应。</pre>
+      </details>
+    </section>
+
+    <section class="slide" id="path" aria-labelledby="path-title">
+      <p class="eyebrow">02 / FOLLOW ONE REQUEST</p>
+      <h2 id="path-title">网页很简单。<br><span>边界很重要。</span></h2>
+      <p class="section-intro">我们没有拆成一堆微服务：一个容器，同时提供讲义和 API。变化的是谁来负责运行它。</p>
+      <div class="flow">
+        <div class="flow-node"><span class="flow-icon">01</span><h3>Browser</h3><p>HTML / CSS / JavaScript</p><code>GET /api/info</code></div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node"><span class="flow-icon">02</span><h3>ACA Ingress</h3><p>公网入口 / HTTPS</p><code>targetPort: 8080</code></div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node accent-node"><span class="flow-icon">03</span><h3>.NET Container</h3><p>Minimal API / 静态讲义</p><code>JSON + runtime metadata</code></div>
+      </div>
+      <p class="callout">上图是部署后的路径。本地运行时，浏览器直接连接 ASP.NET Core，不经过 ACA。</p>
+      <div class="three-columns">
+        <div><h3>Application</h3><p>一个稳定的应用入口。访问者不需要知道我们更新了多少次。</p></div>
+        <div><h3>Revision</h3><p>一次部署配置的快照。新镜像或环境变量更新，可以形成新版本。</p></div>
+        <div><h3>Replica</h3><p>实际运行的一份实例。不要把某个进程的内存当成所有实例共享的数据。</p></div>
+      </div>
+      <div class="ownership-note"><span>THE MINDSET SHIFT</span><p>不再先问“这台机器是谁的”，而是先声明<strong>“我要哪个版本、多少容量、什么访问入口”</strong>。这些能力并非硬件环境做不到；云平台把背后的编排与控制循环做成了可直接使用的服务。</p></div>
+      <a class="source-link" href="https://learn.microsoft.com/azure/container-apps/revisions" target="_blank" rel="noopener noreferrer">Microsoft Learn · Revisions ↗</a>
+    </section>
+
+    <section class="slide" id="cloudlab" aria-labelledby="cloudlab-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">03 / DECLARE INTENT, WATCH THE SYSTEM</p><h2 id="cloudlab-title">如果容量，<span>会自己跟上来？</span></h2></div>
+        <span class="simulation-tag">LOCAL SIMULATION · 不是 ACA 实时指标</span>
+      </div>
+      <p class="lab-intro">这里是一个可操作的解释模型。左边看容量控制，右边看发布控制；二者独立，不冒充真实云资源。</p>
+      <div class="lab-grid">
+        <article class="lab-panel">
+          <div class="lab-panel-heading"><span class="card-label">CAPACITY / AUTOSCALING</span><span id="sim-clock" class="model-clock">t + 0 s</span></div>
+          <label class="range-label" for="sim-load"><span>模拟请求速率</span><strong><output id="sim-load-value">6</output> req/s</strong></label>
+          <input class="lab-range" id="sim-load" type="range" min="0" max="24" step="1" value="6">
+          <div class="lab-controls"><button class="small-button" id="sim-burst" type="button">突发流量 ↗</button><button class="small-button" id="sim-idle" type="button">让流量归零</button><button class="small-button" id="sim-reset" type="button">重置</button></div>
+          <label class="warm-option"><input id="sim-warm" type="checkbox" checked> 保留 1 个 warm replica <span>minReplicas = 1</span></label>
+          <div class="sim-metrics">
+            <div><span>RUNNING / TARGET</span><strong id="sim-replicas">1 / 1</strong></div>
+            <div><span>QUEUED REQUESTS</span><strong id="sim-queue">0</strong></div>
+            <div><span>COMPLETED</span><strong id="sim-completed">0</strong></div>
+          </div>
+          <div class="replica-rack" aria-label="模拟的副本池">
+            <div class="replica-tile" data-replica="1"><span class="replica-light"></span><small>REPLICA 01</small><strong>Running</strong></div>
+            <div class="replica-tile" data-replica="2"><span class="replica-light"></span><small>REPLICA 02</small><strong>Stopped</strong></div>
+            <div class="replica-tile" data-replica="3"><span class="replica-light"></span><small>REPLICA 03</small><strong>Stopped</strong></div>
+            <div class="replica-tile" data-replica="4"><span class="replica-light"></span><small>REPLICA 04</small><strong>Stopped</strong></div>
+          </div>
+          <div class="capacity-timeline" id="sim-timeline" aria-label="最近 32 个模拟时刻的运行副本数"></div>
+          <div class="lab-state-row"><p id="sim-state" role="status">准备好后，开始发送模拟流量。</p><button class="primary-button" id="sim-play" type="button">开始模拟</button></div>
+          <details class="model-notes"><summary>这个模型做了哪些简化？</summary><p>每副本 6 req/s、最多 4 副本；每 2 个模拟秒增加一个副本；低负载持续 6 个模拟秒才缩容。有积压时至少保留一个副本，排空后才能缩到零。冷启动设为 3 个模拟秒，每 0.5 个真实秒推进一次。它不是 ACA 默认阈值、性能承诺或账单估算。</p><p>去掉 warm replica → 流量归零 → 等待缩到零 → 再给突发流量，可以观察启动期间的积压。实际 ACA HTTP scaling 使用并发请求等指标，不是这个简化的 req/s 模型。</p></details>
+        </article>
+        <article class="lab-panel release-panel">
+          <div class="lab-panel-heading"><span class="card-label">RELEASE / TRAFFIC SPLIT</span><span class="model-clock">独立示意</span></div>
+          <h3>发布，不一定是全量替换。</h3>
+          <p class="release-copy">保留两个 revision，先让少量流量走新版本。先观察，再扩大；有问题时，把流量拨回去。</p>
+          <div class="revision-pair">
+            <div class="revision-mini"><span>STABLE</span><strong>v1</strong><output id="split-v1">90%</output></div>
+            <div class="revision-mini canary"><span>CANARY</span><strong>v2</strong><output id="split-v2">10%</output></div>
+          </div>
+          <label class="range-label" for="sim-split"><span>新 revision 的流量权重</span><strong id="split-label">10%</strong></label>
+          <input class="lab-range" id="sim-split" type="range" min="0" max="100" step="10" value="10">
+          <div class="traffic-samples" id="traffic-samples" aria-label="20 个理想化请求的分流示意"></div>
+          <div class="sample-legend"><span><i></i> v1</span><span><i class="canary-swatch"></i> v2</span><span>20 个理想化样本，不是真实请求</span></div>
+          <div class="lab-controls"><button class="small-button" id="split-canary" type="button">10% 试运行</button><button class="small-button" id="split-promote" type="button">全部切到 v2</button><button class="small-button rollback-button" id="split-rollback" type="button">↶ 回到 v1</button></div>
+          <p class="release-verdict" id="release-verdict" role="status">同一个入口，两个版本。让变更风险分批发生。</p>
+          <p class="model-footnote">真实 ACA 分流需要 multiple revision 模式；每个 revision 独立扩缩容。当前 deploy.yml 用 single revision，先把端到端发布闭环跑通。这里的按钮不会修改云资源。</p>
+        </article>
+      </div>
+      <div class="lab-takeaway"><strong>真正有趣的不是“多了几台机器”。</strong><span>是应用可以声明意图，平台持续协调实际状态；而你仍然要理解冷启动、状态、成本和发布风险。</span></div>
+      <div class="sources"><a href="https://learn.microsoft.com/azure/container-apps/scale-app" target="_blank" rel="noopener noreferrer">ACA scaling ↗</a><a href="https://learn.microsoft.com/azure/container-apps/traffic-splitting" target="_blank" rel="noopener noreferrer">Traffic splitting ↗</a></div>
+    </section>
+
+    <section class="slide" id="deploy" aria-labelledby="deploy-title">
+      <p class="eyebrow">04 / LOCAL → CONTAINER → CLOUD</p>
+      <h2 id="deploy-title">同一个项目。<span>不同的运行位置。</span></h2>
+      <div class="deploy-grid">
+        <article class="step-card"><span class="step-label">STEP 01 · LOCAL</span><h3>先在本地跑通</h3><p>服务启动后，讲义和 API 在同一个地址。</p><pre><code>cd aca-presentation
+dotnet run
+
+# http://localhost:5080
+# /healthz
+# /api/info</code></pre></article>
+        <article class="step-card"><span class="step-label">STEP 02 · CONTAINER</span><h3>把运行环境一起带走</h3><p>多阶段构建；最终镜像只放发布产物。</p><pre><code>docker build -t sharing:v1 .
+docker run --rm -p 8080:8080 \
+  -e APP_VERSION=v1 sharing:v1
+
+# ASP.NET Core 10
+# non-root / port 8080</code></pre></article>
+        <article class="step-card"><span class="step-label">STEP 03 · ACA</span><h3>手动触发 deploy.yml</h3><p>GitHub Actions 通过 OIDC 登录，再发布新镜像。</p><pre><code>tests → build → push → deploy
+
+image: commit + run ID
+version: v1 / v2
+verification: public /api/info
+
+# 先配置 Azure 和 GitHub environment</code></pre></article>
+      </div>
+      <p class="callout">上传的是这个小项目的容器构建上下文，不是整个工作仓库。工作流不会因为 push 或 pull request 自动部署。</p>
+    </section>
+
+    <section class="slide" id="version" aria-labelledby="version-title">
+      <p class="eyebrow">05 / CHANGE THE APP, NOT THE LINK</p>
+      <h2 id="version-title">现在，<span>给它换一个版本。</span></h2>
+      <div class="version-demo">
+        <div class="version-journey"><span class="release-box">v1<span>before</span></span><span class="release-arrow">→</span><span class="release-box next-release">v2<span>after</span></span></div>
+        <div class="version-instructions">
+          <h3>讲义不换，后端更新。</h3>
+          <p>在 GitHub Actions 手动运行 <strong>Deploy Sharing to ACA</strong>，选择 <code>v2</code>。等部署完成，再发一次请求。</p>
+          <p>这里的 v1/v2 是后端的版本标签；修改代码后的发布还会使用新的镜像。没有“切换前端假数据”的按钮。</p>
+          <div class="inline-actions"><button class="primary-button" data-request type="button">再请求一次，看看版本</button><a class="text-link" href="#runtime">查看完整运行卡片 →</a></div>
+          <p class="version-observation" id="version-observation" role="status">先发一次请求，记录当前版本。</p>
+        </div>
+      </div>
+      <div class="three-columns">
+        <div><h3>Same URL</h3><p>访问者继续使用相同入口，不需要新的书签。</p></div>
+        <div><h3>Real revision</h3><p>看真实 revision 变化，不只看绿色的部署成功提示。</p></div>
+        <div><h3>Verify the result</h3><p>工作流检查公网实际返回的版本和 revision，避免误把旧版本当作成功。</p></div>
+      </div>
+    </section>
+
+    <section class="slide" id="takeaway" aria-labelledby="takeaway-title">
+      <p class="eyebrow">06 / TAKE IT WITH YOU</p>
+      <h2 id="takeaway-title">下一个放上去的，<br><span>可以是你的 Demo。</span></h2>
+      <div class="takeaway-grid">
+        <div class="takeaway-main"><span class="big-bracket">{ }</span><h3>替换内容，不必重做整条路径。</h3><p>保留服务入口、Dockerfile 和部署流程，把这里的讲义换成你的 dashboard、实验工具或 API demo。</p><div class="tags"><span>一个项目</span><span>一个镜像</span><span>一个网址</span></div></div>
+        <div class="takeaway-list">
+          <div><span>01</span><p><strong>一个真正能打开的网站</strong>让别人从“看演示”变成“自己试”。</p></div>
+          <div><span>02</span><p><strong>一张真实运行卡片</strong>知道现在运行的是什么、在哪里。</p></div>
+          <div><span>03</span><p><strong>一次看得见的版本升级</strong>从修改到部署，再到验证。</p></div>
+          <div><span>04</span><p><strong>一套能带走复用的方法</strong>源码、讲义、容器和 deploy.yml。</p></div>
+        </div>
+      </div>
+      <p class="callout">Credit 是实验预算，不是必须花满的目标。分享结束后检查副本、镜像仓库和日志的费用；开发测试项目不承诺长期生产托管。</p>
+      <div class="sources"><a href="https://learn.microsoft.com/azure/container-apps/" target="_blank" rel="noopener noreferrer">ACA 文档 ↗</a><a href="https://learn.microsoft.com/azure/container-apps/billing" target="_blank" rel="noopener noreferrer">计费说明 ↗</a><a href="https://learn.microsoft.com/visualstudio/subscriptions/vs-azure-eligibility" target="_blank" rel="noopener noreferrer">Azure credit ↗</a></div>
+    </section>
+  </main>
+
+  <footer class="navigation">
+    <span class="keyboard-hint"><kbd>←</kbd> <kbd>→</kbd> 翻页 · <kbd>F</kbd> 全屏</span>
+    <nav class="slide-dots" aria-label="章节">
+      <a href="#intro" aria-label="开场"></a><a href="#runtime" aria-label="运行卡片"></a><a href="#path" aria-label="请求路径"></a><a href="#cloudlab" aria-label="云端控制台"></a><a href="#deploy" aria-label="部署"></a><a href="#version" aria-label="版本升级"></a><a href="#takeaway" aria-label="带走方法"></a>
+    </nav>
+    <div class="page-controls"><button id="previous" type="button" aria-label="上一页">←</button><span id="page-counter">01 / 07</span><button id="next" type="button" aria-label="下一页">→</button></div>
+  </footer>
+  <progress id="deck-progress" value="1" max="7" aria-label="讲义进度"></progress>
+  <p id="toast" class="toast" role="status" hidden></p>
+  <noscript><p>JavaScript 未启用：可以阅读全部讲义，但实时运行卡片需要启用 JavaScript。</p></noscript>
+</body>
+</html>

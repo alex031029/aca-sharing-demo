@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="node_modules\**;tests\**;test-results\**;playwright-report\**" />
+    <None Remove="node_modules\**;tests\**;test-results\**;playwright-report\**" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/TestResults/
+**/test-results/
+**/playwright-report/
+.vs/
+.env
+.env.*
+*.user
+*.suo
+*.log
+.DS_Store

@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: sharing-aca-deployment
@@ -64,6 +63,7 @@ jobs:
     environment: sharing-aca
     permissions:
       contents: read
+      id-token: write
     env:
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       AZURE_CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP }}

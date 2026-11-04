@@ -1,5 +1,9 @@
 # 这份 Presentation 不在 localhost
 
+**访问网页：[打开 ACA 网站 ↗](https://yansh-sharing-demo.calmdune-96af11d5.eastus.azurecontainerapps.io/)**
+
+> 当前部署状态（2026-11-04）：该地址暂时运行微软 .NET 示例，本仓库的 presentation 尚未部署。
+
 一个 ASP.NET Core 10 应用，同时提供 HTML 讲义和真实运行信息 API。
 运行服务只需要 .NET 10 SDK；Node.js 仅用于浏览器测试。
 

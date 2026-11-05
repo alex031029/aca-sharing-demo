@@ -8,6 +8,7 @@
   const errorBox = document.getElementById("request-error");
   const snapshot = document.getElementById("snapshot-label");
   const offline = !["http:", "https:"].includes(window.location.protocol);
+  document.getElementById("deck-progress").max = slides.length;
   let current = 0;
   let lastResponse = null;
   let toastTimer;

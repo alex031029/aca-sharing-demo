@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test:browser": "playwright test",
-    "check": "node --check wwwroot/app.js && npm run test:browser"
+    "check": "node --check wwwroot/app.js && node --check wwwroot/cloud-lab.js && node --check wwwroot/vm-lab.js && npm run test:browser"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1"

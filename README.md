@@ -1,8 +1,10 @@
 # 这份 Presentation 不在 localhost
 
-**访问网页：[打开 ACA 网站 ↗](https://yansh-sharing-demo.calmdune-96af11d5.eastus.azurecontainerapps.io/)**
+**本次演示入口：运行下方启动命令后，访问 [localhost:5080](http://localhost:5080/)。**
 
-> 当前部署状态（2026-11-04）：该地址暂时运行微软 .NET 示例，本仓库的 presentation 尚未部署。
+**ACA 基础设施地址：[打开 ACA 网站 ↗](https://yansh-sharing-demo.calmdune-96af11d5.eastus.azurecontainerapps.io/)**
+
+> 当前使用 localhost 演示，云端发布排查已暂停。ACA 地址仍是微软 .NET 示例，不是本讲义。
 
 一个 ASP.NET Core 10 应用，同时提供 HTML 讲义和真实运行信息 API。
 运行服务只需要 .NET 10 SDK；Node.js 仅用于浏览器测试。
@@ -23,7 +25,7 @@ dotnet run --project .\aca-presentation
 
 | 路径 | 用途 |
 | --- | --- |
-| `/` | 七页 HTML 讲义，包括可交互的本地 cloud lab |
+| `/` | 九页 HTML 讲义，包括 cloud lab、身份联合和 VM 选型 |
 | `/api/info` | 版本、真实 ACA 元数据或本地主机、UTC 时间、uptime、request ID |
 | `/healthz` | 健康检查 |
 
@@ -161,10 +163,44 @@ v1/v2 是 API 展示的配置标签，不代表镜像内容必然不同。工作
 - `aca-presentation\wwwroot\styles.css`：桌面与手机布局。
 - `aca-presentation\wwwroot\app.js`：翻页、真实请求、版本变化、错误展示。
 - `aca-presentation\wwwroot\cloud-lab.js`：明确标注的本地扩缩容、冷启动和版本分流解释模型，不调用 Azure。
+- `aca-presentation\wwwroot\vm-lab.js`：官方报价快照与按运行时长计算的 VM 计算费估算，不读取订阅账单。
 - `aca-presentation\Program.cs`：ASP.NET Core 服务和 API；只返回明确列出的运行元数据。
 - `aca-presentation\tests\browser`：Playwright 测试；`aca-presentation.Tests`：.NET 集成测试。
 
 公开讲义不应放入内部聊天、内部源码、订阅凭据或工作资料。当前页面仅包含通用技术内容。
+
+## 新增分享内容与研究口径
+
+- `#identity`：GitHub Actions、OIDC、WIF 与 FIC 的关系，以及本次公司管理环境中的治理限制。
+  案例只保留脱敏结论，不包含真实策略名称、管理组名称、tenant/subscription ID。
+  Portal 是入口，不是限制的来源；个人订阅也必须满足相应权限、策略和资源条件。
+  Azure DevOps WIF 与 GitHub OIDC 的模式有关，但 issuer / subject 不能直接照抄，
+  ADO 新旧 service connection 的格式也有变化。
+- `#vm`：比较小规格 D、B 系列和 Arm。点击型号、调整每月计费运行时长，
+  查看计算费，不把估算称为完整账单或 credit 余额。
+
+价格取自 Azure Retail Prices API，于 **2026-11-05 UTC** 查询：
+区域 `eastus`、USD、Linux、标准 `Consumption`，排除 Windows、Spot、Low Priority、
+预留实例和同名 Cloud Services 计费项。具体快照在 `vm-lab.js`，不需要联网即可演示。
+报价可能变化，也不保证特定订阅有该 SKU 的配额或库存。
+
+本次比较的型号：`B2ats_v2`、`B2als_v2`、`D2as_v5`、`D2als_v6`、`D2ps_v6`。
+比较不等于性能基准测试；先确认架构与内存，再根据 CPU、磁盘和网络监控选择规格。
+730 小时只是统一比较口径。磁盘、IP、出网、额外软件和税费不在计算器中；
+Visual Studio 月度 credit 的适用范围应以个人开发测试福利条款为准。
+
+研究参考：
+
+- [WIF / FIC 概念](https://learn.microsoft.com/entra/workload-id/workload-identity-federation)
+- [Azure DevOps WIF service connection](https://learn.microsoft.com/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops)
+- [Azure Policy 与 RBAC](https://learn.microsoft.com/azure/governance/policy/overview)
+- [Basv2：规格与 CPU credits](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/basv2-series)
+- [Dasv5](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dasv5-series)
+- [Dalsv6](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dalsv6-series)
+- [Dpsv6 / Arm64](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dpsv6-series)
+- [Azure Retail Prices API](https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices)
+- [VM 状态与计费](https://learn.microsoft.com/azure/virtual-machines/states-billing)
+- [Visual Studio Enterprise credit 条款](https://azure.microsoft.com/pricing/offers/ms-azr-0063p/)
 
 ## Cloud lab 演示顺序
 

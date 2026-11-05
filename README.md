@@ -1,10 +1,11 @@
 # 这份 Presentation 不在 localhost
 
-**本次演示入口：运行下方启动命令后，访问 [localhost:5080](http://localhost:5080/)。**
+**在线演示：[打开 ACA 上的 Presentation ↗](https://yansh-sharing-demo.calmdune-96af11d5.eastus.azurecontainerapps.io/)**
 
-**ACA 基础设施地址：[打开 ACA 网站 ↗](https://yansh-sharing-demo.calmdune-96af11d5.eastus.azurecontainerapps.io/)**
+**部署参考：[将公开 GitHub 仓库手动部署到 ACA](docs/manual-deployment.md)**
 
-> 当前使用 localhost 演示，云端发布排查已暂停。ACA 地址仍是微软 .NET 示例，不是本讲义。
+> 线上已运行本项目，不再是微软示例。本次通过 Cloud Shell 和 ACR 手动发布；
+> GitHub Actions 部署尚未启用。本地开发仍可使用下方的 localhost 启动方式。
 
 一个 ASP.NET Core 10 应用，同时提供 HTML 讲义和真实运行信息 API。
 运行服务只需要 .NET 10 SDK；Node.js 仅用于浏览器测试。
@@ -76,6 +77,10 @@ docker run --rm -p 8080:8080 -e APP_VERSION=v1 sharing-presentation:v1
 GitHub 工作流会执行 Linux 镜像构建和容器 smoke check。
 
 ## GitHub Actions 部署
+
+当前线上版本使用的是[手动部署流程](docs/manual-deployment.md)，无需 GitHub Environment、
+OIDC 或 FIC。以下是保留的 Actions 工作流及其前置条件，不代表当前手动环境已满足：
+手动指南使用 ACA 的 UAMI 拉镜像，现有工作流则要求 ACA 的系统分配身份。
 
 工作流在仓库根目录 `.github\workflows\deploy.yml`，只接受手动触发。
 它先检查 .NET、浏览器和 Linux 容器，再构建不可变镜像，部署并验证公网返回值。

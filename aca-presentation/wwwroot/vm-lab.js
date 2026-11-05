@@ -5,6 +5,12 @@
   // standard Linux Consumption meters; excludes Windows, Spot and Cloud Services.
   const skus = [
     {
+      name: "B2s", kind: "当前 VPN 机 · Bv1", cpu: 2, memory: 4, rate: 0.0416, current: true,
+      profile: "Standard_B2s · x64 · 2 vCPU / 4 GiB · Burstable",
+      fit: "这是分享者当前使用的 VPN VM 型号。先把它作为现用对照，观察 CPU credit、内存、吞吐和出网量；这里的价格不是对现有机器账单的读取。",
+      caution: "Bv1 已进入 End of Life，官方计划于 2028-11-15 退役，并有新建/扩容限制。现用对照不等于新建推荐；规划迁移到当前系列，而不是把它理解成今天已经停用。"
+    },
+    {
       name: "B2ats_v2", kind: "很轻的突发实验", cpu: 2, memory: 1, rate: 0.0094,
       profile: "AMD x64 · 2 vCPU / 1 GiB · Burstable",
       fit: "适合非常轻的脚本、学习用网络实验或小服务。先确认操作系统和后台进程之外，还剩多少内存。",
@@ -40,9 +46,12 @@
   const error = document.getElementById("vm-error");
   const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
   let selected = skus.find((sku) => sku.name === "D2as_v5");
+  document.getElementById("vpn-b2s-cost").textContent =
+    currency.format(skus.find((sku) => sku.name === "B2s").rate * 730);
 
   const rows = skus.map((sku) => {
     const row = document.createElement("tr");
+    row.classList.toggle("vm-current", sku.current === true);
     const identity = document.createElement("td");
     const button = document.createElement("button");
     button.type = "button";
@@ -93,6 +102,15 @@
   hours.addEventListener("input", render);
   document.querySelectorAll("[data-vm-hours]").forEach((button) => {
     button.addEventListener("click", () => { hours.value = button.dataset.vmHours; render(); });
+  });
+  document.querySelectorAll("[data-select-vm]").forEach((link) => {
+    link.addEventListener("click", () => {
+      const sku = skus.find((entry) => entry.name === link.dataset.selectVm);
+      if (!sku) throw new Error("The requested VM comparison is not in the price snapshot.");
+      selected = sku;
+      hours.value = "730";
+      render();
+    });
   });
   render();
 })();

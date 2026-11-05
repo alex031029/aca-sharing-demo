@@ -25,7 +25,7 @@ dotnet run --project .\aca-presentation
 
 | 路径 | 用途 |
 | --- | --- |
-| `/` | 九页 HTML 讲义，包括 cloud lab、身份联合和 VM 选型 |
+| `/` | 十页 HTML 讲义，包括 cloud lab、身份联合、VM 选型和 VPN 承载比较 |
 | `/api/info` | 版本、真实 ACA 元数据或本地主机、UTC 时间、uptime、request ID |
 | `/healthz` | 健康检查 |
 
@@ -178,13 +178,21 @@ v1/v2 是 API 展示的配置标签，不代表镜像内容必然不同。工作
   ADO 新旧 service connection 的格式也有变化。
 - `#vm`：比较小规格 D、B 系列和 Arm。点击型号、调整每月计费运行时长，
   查看计算费，默认按整月 730 小时展示，不把估算称为完整账单或 credit 余额。
+- `#vpn`：以分享者给出的现用 `Standard_B2s` 为对照，比较 VM、ACA 和普通 App Service
+  Web / Linux 自定义容器承载方式。区分常规网络层 VPN 与纯用户态 HTTP/WebSocket 隧道，
+  不把支持容器、TCP 或 VNet integration 等同于支持任意 VPN。未假定现有 VPN 协议，
+  也没有实际迁移、部署或压测 VPN。
 
 价格取自 Azure Retail Prices API，于 **2026-11-05 UTC** 查询：
 区域 `eastus`、USD、Linux、标准 `Consumption`，排除 Windows、Spot、Low Priority、
 预留实例和同名 Cloud Services 计费项。具体快照在 `vm-lab.js`，不需要联网即可演示。
 报价可能变化，也不保证特定订阅有该 SKU 的配额或库存。
 
-本次比较的型号：`B2ats_v2`、`B2als_v2`、`D2as_v5`、`D2als_v6`、`D2ps_v6`。
+本次比较的型号：`B2s`、`B2ats_v2`、`B2als_v2`、`D2as_v5`、`D2als_v6`、`D2ps_v6`。
+`Standard_B2s` 的统一参考口径为 2 vCPU / 4 GiB，East US Linux 标准按量计算费
+$0.0416/小时，730 小时约 $30.37；这不是对分享者实际账单的读取。
+它作为“现用对照”而非新建推荐：Bv1 已进入 End of Life，官方计划于 2028-11-15 退役，
+并有新建/扩容限制。应结合对应云、Portal 通知和工作负载情况提前规划迁移。
 比较不等于性能基准测试；先确认架构与内存，再根据 CPU、磁盘和网络监控选择规格。
 730 小时只是统一比较口径。磁盘、IP、出网、额外软件和税费不在计算器中；
 Visual Studio 月度 credit 的适用范围应以个人开发测试福利条款为准。
@@ -195,12 +203,21 @@ Visual Studio 月度 credit 的适用范围应以个人开发测试福利条款�
 - [Azure DevOps WIF service connection](https://learn.microsoft.com/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops)
 - [Azure Policy 与 RBAC](https://learn.microsoft.com/azure/governance/policy/overview)
 - [Basv2：规格与 CPU credits](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/basv2-series)
+- [B2s / Bv1 规格](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/bv1-series)
+- [VM 退役与容量限制](https://learn.microsoft.com/azure/virtual-machines/sizes/lifecycle/retirements-and-capacity-restrictions)
 - [Dasv5](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dasv5-series)
 - [Dalsv6](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dalsv6-series)
 - [Dpsv6 / Arm64](https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dpsv6-series)
 - [Azure Retail Prices API](https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices)
 - [VM 状态与计费](https://learn.microsoft.com/azure/virtual-machines/states-billing)
 - [Visual Studio Enterprise credit 条款](https://azure.microsoft.com/pricing/offers/ms-azr-0063p/)
+- [WireGuard 的 UDP 协议](https://www.wireguard.com/protocol/)
+- [OpenVPN 传输与 TUN/TAP](https://openvpn.net/community-docs/community-articles/openvpn-2-6-manual/)
+- [ACA ingress 协议与外部 TCP 限制](https://learn.microsoft.com/azure/container-apps/ingress-overview)
+- [ACA 容器权限限制](https://learn.microsoft.com/azure/container-apps/containers#limitations)
+- [App Service 自定义容器 HTTP 入口](https://learn.microsoft.com/azure/app-service/configure-custom-container?pivots=container-linux)
+- [App Service Linux / WebSocket](https://learn.microsoft.com/troubleshoot/azure/app-service/faqs-app-service-linux)
+- [App Service plan 与计费](https://learn.microsoft.com/azure/app-service/overview-hosting-plans)
 
 ## Cloud lab 演示顺序
 

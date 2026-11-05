@@ -253,7 +253,7 @@ verification: public /api/info
     <section class="slide" id="vm" aria-labelledby="vm-title">
       <p class="eyebrow">07 / A SMALL CLOUD WORKBENCH</p>
       <h2 id="vm-title">除了 VPN，<span>该选哪一台 VM？</span></h2>
-      <p class="section-intro">我的起点：先拿小规格 D 系列做基线，再用 CPU、内存、磁盘和网络数据决定是否降配。不是把 $150 花满，也不是永远选最便宜的 SKU。</p>
+      <p class="section-intro">我的 VPN 现在用的是 <code>Standard_B2s</code>，先把它作为现用对照。小规格 D 仍可作为持续计算负载的基线，再根据 CPU、内存、磁盘和网络数据选型，而不是只追最便宜的型号。</p>
       <div class="vm-layout">
         <article class="topic-card vm-comparison-card">
           <div class="card-heading"><span class="card-label">SAME vCPU COUNT ≠ SAME CAPACITY</span><span class="model-clock">点击型号比较</span></div>
@@ -288,11 +288,51 @@ verification: public /api/info
         <div><h3>账单不止那几个 vCPU</h3><p>磁盘、公共 IP、出网等另计；网络实验尤其要看出网量。操作系统内关机可能仍收计算费，停止实验后应确认状态为 Deallocated。</p></div>
       </div>
       <details class="model-notes vm-notes"><summary>口径、限制与可带走的选型清单</summary><p>这不是性能排名：不同代际与架构的 vCPU 不能直接视为同等性能。先确认镜像架构、内存余量、CPU 的持续性，再检查磁盘 IOPS/吞吐与网卡上限。报价不含磁盘、IP、流量、额外软件、税费或折扣；Deallocated 后仍可能有磁盘和网络费用。</p><p>730 小时仅用于统一比较，不表示保证连续可用或建议生产托管。检查订阅条款、区域库存和配额；Visual Studio 月度 credit 面向个人开发测试，不是把任何个人常驻服务自动变成免费服务。</p><p>建议顺序：D2as_v5 建立基线 → 空闲居多时比较 B2als_v2 → 确认内存很少才考虑更小的 B2ats_v2 / D2als_v6 → 依赖兼容后再比较 Arm。预算只是一个约束，最终用监控和小规模压测决定。</p></details>
-      <div class="sources"><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/basv2-series" target="_blank" rel="noopener noreferrer">B 系列规格 / CPU credit ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dasv5-series" target="_blank" rel="noopener noreferrer">Dasv5 ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dalsv6-series" target="_blank" rel="noopener noreferrer">Dalsv6 ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dpsv6-series" target="_blank" rel="noopener noreferrer">Arm Dpsv6 ↗</a><a href="https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices" target="_blank" rel="noopener noreferrer">官方价格 API ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/states-billing" target="_blank" rel="noopener noreferrer">关机与计费 ↗</a></div>
+      <div class="sources"><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/bv1-series" target="_blank" rel="noopener noreferrer">B2s / Bv1 ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/basv2-series" target="_blank" rel="noopener noreferrer">Basv2 / CPU credit ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dasv5-series" target="_blank" rel="noopener noreferrer">Dasv5 ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dalsv6-series" target="_blank" rel="noopener noreferrer">Dalsv6 ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/general-purpose/dpsv6-series" target="_blank" rel="noopener noreferrer">Arm Dpsv6 ↗</a><a href="https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices" target="_blank" rel="noopener noreferrer">官方价格 API ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/lifecycle/retirements-and-capacity-restrictions" target="_blank" rel="noopener noreferrer">生命周期与容量限制 ↗</a></div>
+    </section>
+
+    <section class="slide" id="vpn" aria-labelledby="vpn-title">
+      <p class="eyebrow">08 / MATCH THE PLATFORM TO THE PROTOCOL</p>
+      <h2 id="vpn-title">同样叫“VPN”，<span>真的能随便搬吗？</span></h2>
+      <div class="vpn-intro">
+        <aside class="topic-card vpn-baseline">
+          <span class="card-label">MY CURRENT VM · SPEAKER-REPORTED SKU</span>
+          <h3>Standard_B2s</h3>
+          <p>2 vCPU / 4 GiB · B 系列 CPU credit</p>
+          <div class="vpn-reference-cost"><strong id="vpn-b2s-cost">—</strong><span>/ 月 · 730 h 计算费参考</span></div>
+          <p class="model-footnote">统一使用 East US / Linux 标准按量报价，不是现有 VM 的实际账单。没有读取它的区域、系统或 VPN 软件。</p>
+          <a class="text-link" href="#vm" data-select-vm="B2s">回到 SKU 页，选中 B2s 比较 →</a>
+        </aside>
+        <article class="topic-card">
+          <span class="card-label">FIRST ASK: WHAT DOES THE SOFTWARE NEED?</span>
+          <h3>先区分三层 VPN 和应用层隧道。</h3>
+          <p><strong>常规网络层 VPN：</strong>例如 WireGuard 使用 UDP；OpenVPN 可以使用 UDP 或 TCP，常规部署还涉及 TUN/TAP、路由等能力。不能只看容器能否启动。</p>
+          <p><strong>HTTP / WebSocket 代理或隧道：</strong>如果实现完全在用户态、只需要受支持的 Web 入口，ACA 或 App Service 可以作为候选，但要逐项验证。它不等于原样运行任意 VPN。</p>
+          <p class="model-footnote">下面按典型技术需求比较，不假定我现用的 VPN 就是某个协议，也没有在这三种平台上做 VPN 实测。</p>
+        </article>
+      </div>
+      <div class="topic-card vpn-matrix">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>维度</th><th>VM · 自管网络主机</th><th>ACA · 托管容器</th><th>App Service · Web 平台</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">对外入口</th><td>可配置 TCP / UDP；仍需 NSG 和系统防火墙放行。</td><td>HTTP / WebSocket 与 TCP ingress；外部 TCP 需要 VNet 环境，不提供通用 UDP ingress。</td><td>普通 Web / Linux 自定义容器以 HTTP(S) 为入口，支持 WebSocket；不是任意 TCP/UDP 端口托管。</td></tr>
+              <tr><th scope="row">网络控制</th><td>你管理 OS，可按实现配置 TUN、内核、路由和 NAT。</td><td>不允许带宿主级访问的 privileged container；需要这些能力的 VPN 不能按 VM 原样搬。</td><td>管理的是 Web 应用，不是宿主机网络栈；配置容器 HTTP 端口不等于获得一台路由器。</td></tr>
+              <tr><th scope="row">常规 VPN</th><td><strong>最直接的起点。</strong>选择合适系统、规格与网络配置，再实测吞吐。</td><td>WireGuard 的 UDP 入口不匹配。OpenVPN 即便选 TCP，也仍需核对网络设备和权限。</td><td>把 OpenVPN 的端口设为 443，并不会把协议变成 HTTPS；不能视为直接替代品。</td></tr>
+              <tr><th scope="row">Web 型隧道</th><td>可以运行，OS 的维护和更新也由你承担。</td><td>符合入口与容器限制的用户态实现可评估；还要验证超时、重连和状态。</td><td>HTTP / WebSocket 型实现可评估；还需核对套餐、连接限制和平台行为。</td></tr>
+              <tr><th scope="row">连接与伸缩</th><td>重启仍会断连接，但机器生命周期由你管理。</td><td>副本可能重启、更新或缩容。扩副本不自动保留连接状态，缩零也不是持续在线方案。</td><td>应用重启或计划扩缩容时，也要设计重连与状态；不能把 Web 实例当成永久机器。</td></tr>
+              <tr><th scope="row">怎么算钱</th><td>计算小时 + 磁盘 / IP / 出网等。B2s 的 $30.37 只是本次统一口径计算费。</td><td>按所选模式的资源、请求等计费；常驻连接要按持续运行的实际使用量估算。</td><td>专用付费 plan 按配置实例计费；停掉 Web App 不等于释放计划，也不自动停止计划费用。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="vpn-conclusion"><strong>选型判断：常规 VPN 优先 VM；Web 应用再发挥 ACA / App Service 的优势。</strong><p>先确认协议、权限和连接生命周期，再比较价格。VNet integration / private endpoint 表示应用如何接入网络，不等于应用本身就是 VPN gateway。</p></div>
+      <details class="model-notes"><summary>补充：现有 B2s 与新建推荐不是同一件事</summary><p>B2s 属于 Bv1，官方计划于 2028 年 11 月 15 日退役，并对新订阅和扩容有限制；它不是今天已经退役。现有工作负载应结合监控与退役计划安排迁移，新建优先评估当前系列。不要仅凭这个统一价格表修改现有 VPN。</p><p>本页是基于公开平台能力的选型分析，不是部署教程或兼容性认证。特殊用户态实现需要单独验证；持续连接、出网流量和所用订阅的条款，都应计入最终判断。</p></details>
+      <div class="sources"><a href="https://www.wireguard.com/protocol/" target="_blank" rel="noopener noreferrer">WireGuard 协议 ↗</a><a href="https://openvpn.net/community-docs/community-articles/openvpn-2-6-manual/" target="_blank" rel="noopener noreferrer">OpenVPN / TUN ↗</a><a href="https://learn.microsoft.com/azure/container-apps/ingress-overview" target="_blank" rel="noopener noreferrer">ACA 入口 ↗</a><a href="https://learn.microsoft.com/azure/container-apps/containers#limitations" target="_blank" rel="noopener noreferrer">ACA 容器限制 ↗</a><a href="https://learn.microsoft.com/azure/app-service/configure-custom-container?pivots=container-linux" target="_blank" rel="noopener noreferrer">App Service 端口 ↗</a><a href="https://learn.microsoft.com/troubleshoot/azure/app-service/faqs-app-service-linux" target="_blank" rel="noopener noreferrer">App Service WebSocket ↗</a><a href="https://learn.microsoft.com/azure/app-service/overview-hosting-plans" target="_blank" rel="noopener noreferrer">App Service 计费 ↗</a><a href="https://learn.microsoft.com/azure/container-apps/billing" target="_blank" rel="noopener noreferrer">ACA 计费 ↗</a><a href="https://learn.microsoft.com/azure/virtual-machines/sizes/lifecycle/retirements-and-capacity-restrictions" target="_blank" rel="noopener noreferrer">Bv1 生命周期 ↗</a></div>
     </section>
 
     <section class="slide" id="takeaway" aria-labelledby="takeaway-title">
-      <p class="eyebrow">08 / TAKE IT WITH YOU</p>
+      <p class="eyebrow">09 / TAKE IT WITH YOU</p>
       <h2 id="takeaway-title">下一个放上去的，<br><span>可以是你的 Demo。</span></h2>
       <div class="takeaway-grid">
         <div class="takeaway-main"><span class="big-bracket">{ }</span><h3>替换内容，不必重做整条路径。</h3><p>保留服务入口、Dockerfile 和部署流程，把这里的讲义换成你的 dashboard、实验工具或 API demo。</p><div class="tags"><span>一个项目</span><span>一个镜像</span><span>一个网址</span></div></div>
@@ -311,11 +351,11 @@ verification: public /api/info
   <footer class="navigation">
     <span class="keyboard-hint"><kbd>←</kbd> <kbd>→</kbd> 翻页 · <kbd>F</kbd> 全屏</span>
     <nav class="slide-dots" aria-label="章节">
-      <a href="#intro" aria-label="开场"></a><a href="#runtime" aria-label="运行卡片"></a><a href="#path" aria-label="请求路径"></a><a href="#cloudlab" aria-label="云端控制台"></a><a href="#deploy" aria-label="部署"></a><a href="#identity" aria-label="Actions 与身份联合"></a><a href="#version" aria-label="版本升级"></a><a href="#vm" aria-label="VM 选型"></a><a href="#takeaway" aria-label="带走方法"></a>
+      <a href="#intro" aria-label="开场"></a><a href="#runtime" aria-label="运行卡片"></a><a href="#path" aria-label="请求路径"></a><a href="#cloudlab" aria-label="云端控制台"></a><a href="#deploy" aria-label="部署"></a><a href="#identity" aria-label="Actions 与身份联合"></a><a href="#version" aria-label="版本升级"></a><a href="#vm" aria-label="VM 选型"></a><a href="#vpn" aria-label="VPN 承载方式"></a><a href="#takeaway" aria-label="带走方法"></a>
     </nav>
-    <div class="page-controls"><button id="previous" type="button" aria-label="上一页">←</button><span id="page-counter">01 / 09</span><button id="next" type="button" aria-label="下一页">→</button></div>
+    <div class="page-controls"><button id="previous" type="button" aria-label="上一页">←</button><span id="page-counter">01 / 10</span><button id="next" type="button" aria-label="下一页">→</button></div>
   </footer>
-  <progress id="deck-progress" value="1" max="9" aria-label="讲义进度"></progress>
+  <progress id="deck-progress" value="1" max="10" aria-label="讲义进度"></progress>
   <p id="toast" class="toast" role="status" hidden></p>
   <noscript><p>JavaScript 未启用：可以阅读全部讲义，但实时运行卡片需要启用 JavaScript。</p></noscript>
 </body>

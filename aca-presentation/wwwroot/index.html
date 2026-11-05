@@ -271,7 +271,7 @@ verification: public /api/info
           <span class="card-label">COMPUTE-ONLY ESTIMATE · NOT A BILL</span>
           <h3 id="vm-selected">D2as_v5</h3>
           <p id="vm-profile" class="vm-profile"></p>
-          <label class="range-label" for="vm-hours"><span>每月计费运行时长</span><strong><output id="vm-hours-value">160</output> h</strong></label>
+          <label class="range-label" for="vm-hours"><span>每月计费小时数</span><strong><output id="vm-hours-value">160</output> h</strong></label>
           <input class="lab-range" id="vm-hours" type="range" min="0" max="730" step="1" value="160">
           <div class="lab-controls"><button class="small-button" type="button" data-vm-hours="40">周末实验 · 40 h</button><button class="small-button" type="button" data-vm-hours="160">工作时段 · 160 h</button><button class="small-button" type="button" data-vm-hours="730">整月比较 · 730 h</button></div>
           <div class="vm-cost" aria-live="polite"><strong id="vm-cost">$13.76</strong><span>每月计算费估算</span></div>
@@ -283,7 +283,7 @@ verification: public /api/info
         </aside>
       </div>
       <div class="three-columns vm-checklist">
-        <div><h3>B：便宜，但有 CPU credit</h3><p>空闲时积累，突发时消耗，用完回到基线。轻量实验值得试；持续编译、压测或网络加密负载，先看 CPU credit 与实际吞吐。</p></div>
+        <div><h3>B：便宜，但有 CPU credit</h3><p>这是性能积分，不是 $150 的美元额度。低负载时积累，突发时消耗，用完回到基线。持续编译、压测或网络加密负载，先看 CPU credit 与实际吞吐。</p></div>
         <div><h3>D：小规格也可以很实用</h3><p>开发机、容器实验、小 API 都可以从小 D 起步。Arm 需要匹配操作系统、镜像和原生依赖；不能把 amd64 镜像直接当成 arm64。</p></div>
         <div><h3>账单不止那几个 vCPU</h3><p>磁盘、公共 IP、出网等另计；网络实验尤其要看出网量。操作系统内关机可能仍收计算费，停止实验后应确认状态为 Deallocated。</p></div>
       </div>

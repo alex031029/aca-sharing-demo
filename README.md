@@ -177,7 +177,7 @@ v1/v2 是 API 展示的配置标签，不代表镜像内容必然不同。工作
   Azure DevOps WIF 与 GitHub OIDC 的模式有关，但 issuer / subject 不能直接照抄，
   ADO 新旧 service connection 的格式也有变化。
 - `#vm`：比较小规格 D、B 系列和 Arm。点击型号、调整每月计费运行时长，
-  查看计算费，不把估算称为完整账单或 credit 余额。
+  查看计算费，默认按整月 730 小时展示，不把估算称为完整账单或 credit 余额。
 
 价格取自 Azure Retail Prices API，于 **2026-11-05 UTC** 查询：
 区域 `eastus`、USD、Linux、标准 `Consumption`，排除 Windows、Spot、Low Priority、

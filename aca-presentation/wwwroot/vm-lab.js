@@ -72,7 +72,7 @@
     }
     error.hidden = true;
     document.getElementById("vm-hours-value").value = String(duration);
-    document.getElementById("vm-hours-heading").textContent = `${duration} h 计算费`;
+    document.getElementById("vm-hours-heading").textContent = `月计算费 · ${duration} h`;
     for (const { sku, row, button, total } of rows) {
       const active = sku === selected;
       row.classList.toggle("vm-active", active);

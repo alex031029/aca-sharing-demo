@@ -259,7 +259,7 @@ verification: public /api/info
           <div class="card-heading"><span class="card-label">SAME vCPU COUNT ≠ SAME CAPACITY</span><span class="model-clock">点击型号比较</span></div>
           <div class="table-wrap">
             <table class="vm-table">
-              <thead><tr><th>SKU / 类型</th><th>vCPU / RAM</th><th>USD / h</th><th id="vm-hours-heading">160 h 计算费</th></tr></thead>
+              <thead><tr><th>SKU / 类型</th><th>vCPU / RAM</th><th>USD / h</th><th id="vm-hours-heading">月计算费 · 730 h</th></tr></thead>
               <tbody id="vm-skus"></tbody>
             </table>
           </div>
@@ -271,11 +271,11 @@ verification: public /api/info
           <span class="card-label">COMPUTE-ONLY ESTIMATE · NOT A BILL</span>
           <h3 id="vm-selected">D2as_v5</h3>
           <p id="vm-profile" class="vm-profile"></p>
-          <label class="range-label" for="vm-hours"><span>每月计费小时数</span><strong><output id="vm-hours-value">160</output> h</strong></label>
-          <input class="lab-range" id="vm-hours" type="range" min="0" max="730" step="1" value="160">
-          <div class="lab-controls"><button class="small-button" type="button" data-vm-hours="40">周末实验 · 40 h</button><button class="small-button" type="button" data-vm-hours="160">工作时段 · 160 h</button><button class="small-button" type="button" data-vm-hours="730">整月比较 · 730 h</button></div>
-          <div class="vm-cost" aria-live="polite"><strong id="vm-cost">$13.76</strong><span>每月计算费估算</span></div>
-          <progress id="vm-budget" max="150" value="13.76" aria-label="计算费占 150 美元参考预算的比例"></progress>
+          <label class="range-label" for="vm-hours"><span>每月计费小时数 · 默认整月</span><strong><output id="vm-hours-value">730</output> h</strong></label>
+          <input class="lab-range" id="vm-hours" type="range" min="0" max="730" step="1" value="730">
+          <div class="lab-controls"><button class="small-button" type="button" data-vm-hours="730">整月 · 730 h</button><button class="small-button" type="button" data-vm-hours="160">按需 · 160 h</button><button class="small-button" type="button" data-vm-hours="40">轻度 · 40 h</button></div>
+          <div class="vm-cost" aria-live="polite"><strong id="vm-cost">$62.78</strong><span>每月计算费估算</span></div>
+          <progress id="vm-budget" max="150" value="62.78" aria-label="计算费占 150 美元参考预算的比例"></progress>
           <p id="vm-budget-text" class="model-footnote"></p>
           <p id="vm-fit" class="vm-fit"></p>
           <p id="vm-caution" class="release-verdict"></p>
